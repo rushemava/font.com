@@ -1,0 +1,167 @@
+<html>
+  <head>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Crimson+Pro">
+    <style>
+      body {
+        font-family: 'Crimson Pro', serif;
+        font-size: 48px;
+      }
+    </style>
+  </head>
+  <body>
+    <div>Making the Web Beautiful!</div>
+  </body>
+  https://developers.google.com/fonts/docs/css2#multiple_families
+
+import { useState, useEffect } from "react";
+import moment from "moment";
+import { useRouter } from "next/router";
+import Grid from "@material-ui/core/Grid";
+import AppBar from "@material-ui/core/AppBar";
+import Toolbar from "@material-ui/core/Toolbar";
+import Button from "@material-ui/core/Button";
+import Back from "@material-ui/icons/ArrowBack";
+import Typography from "@material-ui/core/Typography";
+import { makeStyles } from "@material-ui/core/styles";
+import { DatePicker } from "@material-ui/pickers";
+import NextLink from "next/link";
+
+import { cats } from "../../db";
+
+const capitalize = (s) => s[0].toUpperCase() + s.slice(1);
+
+const useStyles = makeStyles((theme) => ({
+  icon: {
+    marginRight: theme.spacing(2)
+  },
+  back: {
+    color: "white"
+  },
+  root: {
+    // height: "100vh"
+  },
+  imageWrapper: {
+    width: "100%",
+    height: 630,
+    padding: "6%"
+  },
+  textWrapper: {
+    width: "100%",
+    padding: "6%"
+  },
+  image: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    objectPosition: ({ cat }) => cat?.photoPosition || "50% 50%"
+  },
+  el: {
+    margin: theme.spacing(0.5)
+  },
+  button: {
+    marginTop: theme.spacing(1)
+  }
+}));
+
+const Post = () => {
+  const router = useRouter();
+  const { id } = router.query;
+  const [cat, setCat] = useState(null);
+  const classes = useStyles({ cat });
+  const [startDate, handleStartDateChange] = useState(moment());
+  const [endDate, handleEndDateChange] = useState(moment().add(2, "days"));
+
+  useEffect(() => {
+    (async () => {
+      const res = await fetch(`/api/cat/${id}`, {
+        headers: {
+          authorization: `Bearer ${sessionStorage.getItem("userID")}`
+        }
+      });
+      const json = await res.json();
+      console.log(json);
+      setCat(json.cat);
+    })();
+  }, [id]);
+
+  if (!cat) {
+    return <h3>Loading...</h3>;
+  }
+
+  const pronouns = cat.gender === "male" ? ["he", "him"] : ["she", "her"];
+
+  return (
+    <>
+      <AppBar position="relative">
+        <Toolbar>
+          <NextLink href="/cats" passHref>
+            <Button className={classes.back}>
+              <Back className={classes.icon} />
+              <Typography variant="h6" color="inherit" noWrap>
+                Back
+              </Typography>
+            </Button>
+          </NextLink>
+        </Toolbar>
+      </AppBar>
+      <Grid container component="main" className={classes.root}>
+        <Grid item xs={false} sm={6} md={7}>
+          <div className={classes.imageWrapper}>
+            <img src={cat.photo} alt="Cat" className={classes.image} />
+          </div>
+        </Grid>
+        <Grid item xs={false} sm={6} md={5}>
+          <div className={classes.textWrapper}>
+            <Typography gutterBottom variant="h2">
+              {cat.name}
+            </Typography>
+            <Typography>
+              {cat.name} is a {cat.adjective} cat. We think you'll absolutely
+              love {pronouns[1]}! {capitalize(pronouns[0])} has {cat.color} fur
+              which you'll have fun getting off your sweater (totally worth it).{" "}
+              {capitalize(pronouns[0])}'s {cat.age} years old, the perfect age
+              for a cat who's fun to play with, but will leave you with a
+              pleasant,rewarding experience. You definitely won't regret renting{" "}
+              {cat.name} for your furry date.
+            </Typography>
+            <br />
+            <DatePicker
+              className={classes.el}
+              disableToolbar
+              variant="inline"
+              label="Pickup Date"
+              value={startDate}
+              onChange={handleStartDateChange}
+            />
+            <DatePicker
+              className={classes.el}
+              disableToolbar
+              variant="inline"
+              label="Return Date"
+              value={endDate}
+              onChange={handleEndDateChange}
+            />
+            <br />
+            <NextLink
+              href={`/rent?id=${id}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`}
+              passHref
+            >
+              <Button
+                className={classes.button}
+                color="primary"
+                variant="contained"
+              >
+                Rent
+              </Button>
+            </NextLink>
+          </div>
+        </Grid>
+      </Grid>
+    </>
+  );
+};
+
+export default Post;
+
+</html>
